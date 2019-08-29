@@ -7,6 +7,7 @@ from lake_envs import *
 
 import pprint
 pp = pprint.PrettyPrinter(indent = 4)
+import random
 
 np.set_printoptions(precision=3)
 
@@ -35,93 +36,35 @@ the parameters P, nS, nA, gamma are defined as follows:
         Discount factor. Number in range [0, 1)
 """
 
-def policy_evaluation(P, nS, nA, policy, gamma=0.9, tol=1e-3):
-    """Evaluate the value function from a given policy.
+def select_action(choice_values,wander,nA):
+    if random.random() < wander:
+        action = -1
+        max_act_value = 0
+        for potential_action in range(nA):
+            if choice_values[potential_action] > max_act_value:
+                max_act_value = choice_values[potential_action]
+                action = potential_action
+        if action > -1:
+            return action
+    return random.choice(range(nA))
 
-    Parameters
-    ----------
-    P, nS, nA, gamma:
-        defined at beginning of file
-    policy: np.array[nS]
-        The policy to evaluate. Maps states to actions.
-    tol: float
-        Terminate policy evaluation when
-            max |value_function(s) - prev_value_function(s)| < tol
-    Returns
-    -------
-    value_function: np.ndarray[nS]
-        The value function of the given policy, where value_function[s] is
-        the value of state s
-    """
-
-    value_function = np.zeros(nS)
-
-    ############################
-    # YOUR IMPLEMENTATION HERE #
+def select_BEST_action(choice_values):
+    action = 0
+    max_act_value = 0
+    for potential_action in range(len(choice_values)):
+        if choice_values[potential_action] > max_act_value:
+            max_act_value = choice_values[potential_action]
+            action = potential_action
+    return action
 
 
-    ############################
-    return value_function
-
-
-def policy_improvement(P, nS, nA, value_from_policy, policy, gamma=0.9):
-    """Given the value function from policy improve the policy.
-
-    Parameters
-    ----------
-    P, nS, nA, gamma:
-        defined at beginning of file
-    value_from_policy: np.ndarray
-        The value calculated from the policy
-    policy: np.array
-        The previous policy.
-
-    Returns
-    -------
-    new_policy: np.ndarray[nS]
-        An array of integers. Each integer is the optimal action to take
-        in that state according to the environment dynamics and the
-        given value function.
-    """
-
-    new_policy = np.zeros(nS, dtype='int')
-
-    ############################
-    # YOUR IMPLEMENTATION HERE #
-
-
-    ############################
-    return new_policy
-
-
-def policy_iteration(P, nS, nA, gamma=0.9, tol=10e-3):
-    """Runs policy iteration.
-
-    You should call the policy_evaluation() and policy_improvement() methods to
-    implement this method.
-
-    Parameters
-    ----------
-    P, nS, nA, gamma:
-        defined at beginning of file
-    tol: float
-        tol parameter used in policy_evaluation()
-    Returns:
-    ----------
-    value_function: np.ndarray[nS]
-    policy: np.ndarray[nS]
-    """
-
-    value_function = np.zeros(nS)
-    policy = np.zeros(nS, dtype=int)
-
-    ############################
-    # YOUR IMPLEMENTATION HERE #
-
-
-    ############################
-    return value_function, policy
-
+def takeAction(P,S,A):
+    fate = random.random()
+    for outcome in P[S][A]:
+        if fate < outcome[0]:
+            return outcome
+        else:
+            fate-=outcome[0]
 
 def value_iteration(P, nS, nA, gamma=0.9, tol=1e-3):
     """
@@ -141,35 +84,43 @@ def value_iteration(P, nS, nA, gamma=0.9, tol=1e-3):
     policy: np.ndarray[nS]
     """
 
-    value_function = np.zeros(nS)
+    value_function = np.zeros((nS,nA))
     policy = np.zeros(nS, dtype=int)
-    ############################
-    # YOUR IMPLEMENTATION HERE #
 
-# frick, this is clearly not what I'm supposed to do.
-# I just brute forced it, I'm clearly missing the point.
-# probably I should be making my own Q function that takes a S and A
-    steplimit = 10000
+    #learning rate
+    alpha = 0.01
+    #discounting factor
+    gamma = 0.9
+    #random choice factor
+    wander = 0.9
+
+    steplimit = 50000
     for step in range(steplimit):
-        improvements = False
-        for S in range(nS):
-            for i in range(nA):
-                resultables = P[S][i]
-                values = [result[0]*(0.9*value_function[ result[1] ] + 0.9*result[2]) for result in resultables]
-                value = sum(values)/len(values)
-                if value > value_function[S]:
-                   #print("value improvement on step {} at S:{} A:{}".format(step,S,i))
-                    improvements = True
-                    value_function[S] = .9*value
-                    policy[S] = i
-        if not improvements:
-            print("breaking at step {}".format(step))
-            break
+        #for S in range(nS):
+            S = 0
+            A = select_action(value_function[S],wander,nA)
+            probability,nextS,reward,terminal = takeAction(P,S,A)
+            for i in range(50):
+                nextA = select_action(value_function[nextS],wander,nA)
+                value_function[S,A] = value_function[S,A] \
+                    + alpha*(reward + gamma*value_function[nextS,nextA] \
+                                - value_function[S,A] \
+                             )
+                #print(value_function[S,A])
+
+                if terminal:
+                    break;
+
+                S, A = nextS, nextA
+                probability,nextS,reward,terminal = takeAction(P,S,A)
+
+
+    for S in range(nS):
+        policy[S] = select_BEST_action(value_function[S])
 
     #pp.pprint(P)
     print("    value function: {}".format(value_function))
     print("            policy: {}".format(policy))
-    ############################
     return value_function, policy
 
 def render_single(env, policy, max_steps=100):
