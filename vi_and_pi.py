@@ -66,7 +66,7 @@ def takeAction(P,S,A):
         else:
             fate-=outcome[0]
 
-def value_iteration(P, nS, nA, gamma=0.9, tol=1e-3):
+def value_iteration(P, nS, nA, gamma=0.9, tol=1e-3, env=None):
     """
     Learn value function and policy by using value iteration method for a given
     gamma and environment.
@@ -94,9 +94,8 @@ def value_iteration(P, nS, nA, gamma=0.9, tol=1e-3):
     #random choice factor
     wander = 0.9
 
-    steplimit = 50000
-    for step in range(steplimit):
-        #for S in range(nS):
+    for step in range(100):
+        for S in range(1000):
             S = 0
             A = select_action(value_function[S],wander,nA)
             probability,nextS,reward,terminal = takeAction(P,S,A)
@@ -113,13 +112,19 @@ def value_iteration(P, nS, nA, gamma=0.9, tol=1e-3):
 
                 S, A = nextS, nextA
                 probability,nextS,reward,terminal = takeAction(P,S,A)
+        if env:
+            #show convergence kinda
+            for S in range(nS):
+                policy[S] = select_BEST_action(value_function[S])
+            print("            policy: {}".format(policy))
+            render_many(env, policy, 100)
 
 
     for S in range(nS):
         policy[S] = select_BEST_action(value_function[S])
 
     #pp.pprint(P)
-    print("    value function: {}".format(value_function))
+    #print("    value function: {}".format(value_function))
     print("            policy: {}".format(policy))
     return value_function, policy
 
@@ -168,7 +173,7 @@ def render_many(env, policy, max_steps=100):
   """
 
   wins = 0
-  for ii in range(100):
+  for ii in range(1000):
       episode_reward = 0
       ob = env.reset()
       for t in range(max_steps):
@@ -178,11 +183,14 @@ def render_many(env, policy, max_steps=100):
         if done:
           break
       if not done:
-        print("The agent didn't reach a terminal state in {} steps.".format(max_steps))
+        #print("The agent didn't reach a terminal state in {} steps.".format(max_steps))
+        pass
       else:
           if episode_reward:
             wins+=1
-  print("{}% win".format(wins))
+  wins = wins/10
+  print("{}% win {}".format(wins,"#"*int(wins)),)
+
 
 # Edit below to run policy and value iteration on different environments and
 # visualize the resulting policies in action!
@@ -199,9 +207,9 @@ if __name__ == "__main__":
 #    V_pi, p_pi = policy_iteration(env.P, env.nS, env.nA, gamma=0.9, tol=1e-3)
 #    render_single(env, p_pi, 100)
 
-    print("\n" + "-"*25 + "\nBeginning Value Iteration\n" + "-"*25)
+    #print("\n" + "-"*25 + "\nBeginning Value Iteration\n" + "-"*25)
 
-    V_vi, p_vi = value_iteration(env.P, env.nS, env.nA, gamma=0.9, tol=1e-3)
+    V_vi, p_vi = value_iteration(env.P, env.nS, env.nA, gamma=0.9, tol=1e-3, env=env)
     render_many(env, p_vi, 100)
     #render_single(env, p_vi, 100)
 
