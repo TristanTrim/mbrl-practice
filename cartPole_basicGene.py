@@ -113,25 +113,31 @@ while(True):
     print()
 
     print("Demonstrating selected policy")
-    observation = env.reset()
-    lasted = 0
-    for _ in range(500):
-      lasted+=1
-      env.render()
-      action = choose(best[0],observation)#env.action_space.sample() # your agent here (this takes random actions)
-      if action:
-          foo = ">---------####>"+"."*int((best[1]-300)/8)
-      else:
-          foo = "<####---------<"+"."*int((best[1]-300)/8)
+    averageScore = 0
+    for trial in range(100):
+        score = 0
+        observation = env.reset()
+        for _ in range(200):
+            score+=1.0
+            if not trial:
+                env.render()
+            action = choose(best[0],observation)#env.action_space.sample() # your agent here (this takes random actions)
+            if action:
+              foo = ">---------####>"+"."*int((best[1]-300)/8)
+            else:
+              foo = "<####---------<"+"."*int((best[1]-300)/8)
 
-      print(["{0:+.2E}".format(x) for x in observation],foo)
-      observation, reward, done, info = env.step(action)
+         #  print(["{0:+.2E}".format(x) for x in observation],foo)
+            observation, reward, done, info = env.step(action)
+            if done:
+                break
 
+        averageScore = (averageScore*trial+score)/(trial+1)
+        print("average score over {} games: {}".format((trial+1),averageScore))
 
     #policies = [[mate(best[0],second_best[0]),0] for _ in range(100)] # genetic algorithm
     print("Generating Random Policies")
     policies = [[gen_policy(),0] for _ in range(policies_per_roll)] # new batch of random policies
-    #  if done:
-    #    break
+
 env.close()
 
