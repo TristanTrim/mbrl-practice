@@ -8,6 +8,7 @@ from lake_envs import *
 import pprint
 pp = pprint.PrettyPrinter(indent = 4)
 import random
+import datetime
 
 np.set_printoptions(precision=3)
 
@@ -66,6 +67,25 @@ def takeAction(P,S,A):
         else:
             fate-=outcome[0]
 
+def apply_return(values,stateActions,rewards,value_function,alpha,gamma):
+    S,A = stateActions[0]
+    G = value_function[S,A]
+    gam = gamma
+    for i in range(len(values)-1):
+        G = G + \
+                alpha*( \
+                rewards[i+1] \
+                +gam*values[i+1] \
+                - values[i] )
+        gam*=gam
+    value_function[S,A] = G
+
+def print4x4(thing):
+    for y in range(4):
+        for x in range(4):
+            print(thing[4*y+x],end=',\t')
+        print()
+
 def value_iteration(P, nS, nA, gamma=0.9, tol=1e-3, env=None):
     """
     Learn value function and policy by using value iteration method for a given
@@ -87,37 +107,68 @@ def value_iteration(P, nS, nA, gamma=0.9, tol=1e-3, env=None):
     value_function = np.zeros((nS,nA))
     policy = np.zeros(nS, dtype=int)
 
+    #return value_function,  [0, 3, 1, 0, 0, 0, 0, 0, 3, 1, 0, 0, 0, 2, 2, 0]
+
     #learning rate
-    alpha = 0.01
-    #discounting factor
-    gamma = 0.9
+    alpha = 0.001
     #random choice factor
     wander = 0.9
+    # number of values to use in the return
+    nBack = 3
+    gamma = .95
 
-    for step in range(100):
-        for S in range(1000):
-            S = 0
-            A = select_action(value_function[S],wander,nA)
-            probability,nextS,reward,terminal = takeAction(P,S,A)
-            for i in range(50):
-                nextA = select_action(value_function[nextS],wander,nA)
-                value_function[S,A] = value_function[S,A] \
-                    + alpha*(reward + gamma*value_function[nextS,nextA] \
-                                - value_function[S,A] \
-                             )
-                #print(value_function[S,A])
+    for nBack in range(2,6):
+        print("\nnBack = {}".format(nBack))
+        print("wander = {}".format(wander))
+        print("alpha = {}".format(alpha))
+        print("gamma = {}".format(gamma))
+        print()
+        for step in range(30):
+            for S in range(20000):
+                S = 0
+                values = []
+                rewards = [0]
+                stateActions = []
+                # the episode!
+                for i in range(50):
+                    A = select_action(value_function[S],wander,nA)
 
-                if terminal:
-                    break;
+                    values.append(value_function[S,A])
+                    stateActions.append((S,A))
+                    probability,S,reward,terminal = takeAction(P,S,A)
+                    rewards.append(reward)
 
-                S, A = nextS, nextA
-                probability,nextS,reward,terminal = takeAction(P,S,A)
-        if env:
-            #show convergence kinda
-            for S in range(nS):
-                policy[S] = select_BEST_action(value_function[S])
-            print("            policy: {}".format(policy))
-            render_many(env, policy, 100)
+                    if len(values) == nBack:
+                        apply_return(values,stateActions,rewards,value_function,alpha,gamma)
+                        del values[0]
+                        del rewards[0]
+                        del stateActions[0]
+
+                    if terminal:
+                        break;
+
+                values.append(value_function[S,A])
+                stateActions.append((S,A))
+                probability,S,reward,terminal = takeAction(P,S,A)
+                rewards.append(reward)
+                while(len(values)>0):
+                    apply_return(values,stateActions,rewards,value_function,alpha,gamma)
+                    del values[0]
+                    del rewards[0]
+                    del stateActions[0]
+            if env:
+                #show convergence kinda
+                for S in range(nS):
+                    policy[S] = select_BEST_action(value_function[S])
+              #  print("value function:")
+              #  print(value_function)
+              #  vf = tuple(round(sum(vf),3) for vf in value_function)
+              #  print4x4(vf)
+              #  print("policy:")
+              #  print4x4(policy)
+                render_many(env, policy, 100)
+                #render_single(env, policy, 100)
+                #print(datetime.datetime.now())
 
 
     for S in range(nS):
@@ -188,7 +239,7 @@ def render_many(env, policy, max_steps=100):
       else:
           if episode_reward:
             wins+=1
-  wins = wins/10
+  wins = wins/10.0
   print("{}% win {}".format(wins,"#"*int(wins)),)
 
 
@@ -210,7 +261,7 @@ if __name__ == "__main__":
     #print("\n" + "-"*25 + "\nBeginning Value Iteration\n" + "-"*25)
 
     V_vi, p_vi = value_iteration(env.P, env.nS, env.nA, gamma=0.9, tol=1e-3, env=env)
-    render_many(env, p_vi, 100)
+    #render_many(env, p_vi, 100)
     #render_single(env, p_vi, 100)
 
 
