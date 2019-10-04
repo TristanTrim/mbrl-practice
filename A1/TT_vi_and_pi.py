@@ -33,8 +33,8 @@ the parameters P, nS, nA, gamma are defined as follows:
                 Discount factor. Number in range [0, 1)
 """
 
-        #################################
-        # YOUR IMPLEMENTATION ALSO HERE #
+#################################
+# YOUR IMPLEMENTATION ALSO HERE #
 
 def print_square(square):
     """For debugging. Prints a 4x4 square nicely."""
@@ -81,7 +81,7 @@ def policy_evaluation_step(P, nS, nA, policy, value_function, gamma=0.9, tol=1e-
             converged = True
         return(converged)
 
-        #################################
+#################################
 
 def policy_evaluation(P, nS, nA, policy, gamma=0.9, tol=1e-3):
         """Evaluate the value function from a given policy.
@@ -249,6 +249,30 @@ def render_single(env, policy, max_steps=100):
   else:
           print("Episode reward: %f" % episode_reward)
 
+def render_many(env, policy, max_steps=100):
+  """
+  Hi ho!
+  """
+
+  wins = 0
+  for ii in range(1000):
+      episode_reward = 0
+      ob = env.reset()
+      for t in range(max_steps):
+        a = policy[ob]
+        ob, rew, done, _ = env.step(a)
+        episode_reward += rew
+        if done:
+          break
+      if not done:
+        #print("The agent didn't reach a terminal state in {} steps.".format(max_steps))
+        pass
+      else:
+          if episode_reward:
+            wins+=1
+  wins = wins/10.0
+  print("{}% win {}".format(wins,"#"*int(wins)),)
+
 
 # Edit below to run policy and value iteration on different environments and
 # visualize the resulting policies in action!
@@ -263,10 +287,12 @@ if __name__ == "__main__":
 
         V_pi, p_pi = policy_iteration(env.P, env.nS, env.nA, gamma=0.9, tol=1e-3)
         render_single(env, p_pi, 100)
+        render_many(env, p_pi, 100)
 
         print("\n" + "-"*25 + "\nBeginning Value Iteration\n" + "-"*25)
 
         V_vi, p_vi = value_iteration(env.P, env.nS, env.nA, gamma=0.9, tol=1e-3)
         render_single(env, p_vi, 100)
+        render_many(env, p_vi, 100)
 
 

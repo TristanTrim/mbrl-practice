@@ -13,32 +13,15 @@ import datetime
 np.set_printoptions(precision=3)
 
 """
-For policy_evaluation, policy_improvement, policy_iteration and value_iteration,
-the parameters P, nS, nA, gamma are defined as follows:
 
-    P: nested dictionary
-        From gym.core.Environment
-        For each pair of states in [1, nS] and actions in [1, nA], P[state][action] is a
-        tuple of the form (probability, nextstate, reward, terminal) where
-            - probability: float
-                the probability of transitioning from "state" to "nextstate" with "action"
-            - nextstate: int
-                denotes the state we transition to (in range [0, nS - 1])
-            - reward: int
-                either 0 or 1, the reward for transitioning from "state" to
-                "nextstate" with "action"
-            - terminal: bool
-              True when "nextstate" is a terminal state (hole or goal), False otherwise
-    nS: int
-        number of states in the environment
-    nA: int
-        number of actions in the environment
-    gamma: float
-        Discount factor. Number in range [0, 1)
+This code is full of spiders. Don't read it.
+
+It does follow an epsilon-greedy iterative policy update algorithm.
+
 """
 
-def select_action(choice_values,wander,nA):
-    if random.random() < wander:
+def select_action(choice_values,epsilon,nA):
+    if random.random() > epsilon:
         action = -1
         max_act_value = 0
         for potential_action in range(nA):
@@ -112,14 +95,14 @@ def value_iteration(P, nS, nA, gamma=0.9, tol=1e-3, env=None):
     #learning rate
     alpha = 0.001
     #random choice factor
-    wander = 0.9
+    epsilon = 0.1
     # number of values to use in the return
     nBack = 3
     gamma = .95
 
     for nBack in range(2,6):
         print("\nnBack = {}".format(nBack))
-        print("wander = {}".format(wander))
+        print("epsilon = {}".format(epsilon))
         print("alpha = {}".format(alpha))
         print("gamma = {}".format(gamma))
         print()
@@ -131,7 +114,7 @@ def value_iteration(P, nS, nA, gamma=0.9, tol=1e-3, env=None):
                 stateActions = []
                 # the episode!
                 for i in range(50):
-                    A = select_action(value_function[S],wander,nA)
+                    A = select_action(value_function[S],epsilon,nA)
 
                     values.append(value_function[S,A])
                     stateActions.append((S,A))
